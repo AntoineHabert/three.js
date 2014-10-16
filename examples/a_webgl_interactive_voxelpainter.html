@@ -12,11 +12,23 @@
 				overflow: hidden;
 			}
 
+			#currentColor {
+				display	: inline-block;
+				width	: 15px;
+				height	: 15px;
+				background-color: #F660AB;
+				border	: solid 2px black;
+			}
+
 			#oldie { background-color: #ddd !important }
 		</style>
 	</head>
 	<body>
-
+		<!--<script type="text/javascript" src="../build/three.js"></script>
+		<script type="text/javascript" src="js/Detector.js"></script>
+		<script type="text/javascript" src="js/RequestAnimationFrame.js"></script>
+		<script type="text/javascript" src="js/stats.min.js"></script>-->
+		
 		<script src="../build/three.min.js"></script>
 
 		<script src="js/Detector.js"></script>
@@ -33,9 +45,23 @@
 			rollOveredFace, isShiftDown = false,
 			theta = 45 * 0.5, isCtrlDown = false;
 
+			var cubeColors	= [
+				new THREE.Color().setRGB(1, 0, 0),
+				new THREE.Color().setRGB(0, 1, 0),
+				new THREE.Color().setRGB(0, 0, 1),	
+				new THREE.Color().setRGB(1, 1, 0),
+				new THREE.Color().setRGB(1, 0, 1),
+				new THREE.Color().setRGB(0, 1, 1),	
+				new THREE.Color().setRGB(1, 0.5, 0.5),	
+				new THREE.Color().setRGB(1, 0.5, 1),	
+				new THREE.Color().setRGB(0.5, 0.5, 1),	
+				new THREE.Color().setRGB(0.5, 0.5, 0.5),	
+			];
+			var cubeType	= 0;
+
 			var rollOverMesh, rollOverMaterial;
 			var voxelPosition = new THREE.Vector3(), tmpVec = new THREE.Vector3(), normalMatrix = new THREE.Matrix3();
-			var cubeGeo, cubeMaterial;
+			var cubeGeo, cubeMaterials = [];
 			var i, intersector;
 
 			var objects = [];
@@ -53,7 +79,7 @@
 				info.style.top = '10px';
 				info.style.width = '100%';
 				info.style.textAlign = 'center';
-				info.innerHTML = '<a href="http://threejs.org" target="_blank">three.js</a> - voxel painter - webgl<br><strong>click</strong>: add voxel, <strong>shift + click</strong>: remove voxel, <strong>control</strong>: rotate';
+				info.innerHTML = '<a href="http://threejs.org" target="_blank">three.js</a> - voxel painter - webgl<br><strong>click</strong>: add voxel, <strong>shift + click</strong>: remove voxel, <strong>control</strong>: rotate, current color: <div id="currentColor"></div>, <strong>0 to 9 keys</strong>: change color';
 				container.appendChild( info );
 
 				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
@@ -70,9 +96,17 @@
 
 				// cubes
 
-				cubeGeo = new THREE.BoxGeometry( 50, 50, 50 );
+				/*cubeGeo = new THREE.BoxGeometry( 50, 50, 50 );
 				cubeMaterial = new THREE.MeshLambertMaterial( { color: 0xfeb74c, ambient: 0x00ff80, shading: THREE.FlatShading, map: THREE.ImageUtils.loadTexture( "textures/square-outline-textured.png" ) } );
-				cubeMaterial.ambient = cubeMaterial.color;
+				cubeMaterial.ambient = cubeMaterial.color;*/
+
+				cubeGeo = new THREE.CubeGeometry( 50, 50, 50 );
+				for( i = 0; i < cubeColors.length; i++ ) {
+					cubeMaterials[i] = new THREE.MeshLambertMaterial( { color: 0x00ff80, shading: THREE.FlatShading, map: THREE.ImageUtils.loadTexture( "textures/square-outline-textured.png" ) } );
+					cubeMaterials[i].color.copy( cubeColors[i] );
+					cubeMaterials[i]._cubeType	= i;
+				}
+				setCubeType(cubeType);
 
 				// picking
 
@@ -80,7 +114,7 @@
 
 				// grid
 
-				var size = 500, step = 50;
+				var size = 1000, step = 50;
 
 				var geometry = new THREE.Geometry();
 
@@ -185,6 +219,11 @@
 
 			}
 
+			function setCubeType(type) {
+				cubeType = type;
+				document.getElementById("currentColor").style.backgroundColor = cubeColors[cubeType].getStyle();
+			}
+
 			function onDocumentMouseMove( event ) {
 
 				event.preventDefault();
@@ -223,7 +262,7 @@
 						intersector = getRealIntersector( intersects );
 						setVoxelPosition( intersector );
 
-						var voxel = new THREE.Mesh( cubeGeo, cubeMaterial );
+						var voxel = new THREE.Mesh( cubeGeo, cubeMaterials[cubeType] );
 						voxel.position.copy( voxelPosition );
 						voxel.matrixAutoUpdate = false;
 						voxel.updateMatrix();
@@ -242,6 +281,17 @@
 
 					case 16: isShiftDown = true; break;
 					case 17: isCtrlDown = true; break;
+
+					case '0'.charCodeAt(0): setCubeType(0);	break;
+					case '1'.charCodeAt(0): setCubeType(1);	break;
+					case '2'.charCodeAt(0): setCubeType(2);	break;
+					case '3'.charCodeAt(0): setCubeType(3);	break;
+					case '4'.charCodeAt(0): setCubeType(4);	break;
+					case '5'.charCodeAt(0): setCubeType(5);	break;
+					case '6'.charCodeAt(0): setCubeType(6);	break;
+					case '7'.charCodeAt(0): setCubeType(7);	break;
+					case '8'.charCodeAt(0): setCubeType(8);	break;
+					case '9'.charCodeAt(0): setCubeType(9);	break;
 
 				}
 
