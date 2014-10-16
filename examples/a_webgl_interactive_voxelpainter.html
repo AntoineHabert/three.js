@@ -1,29 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<title>three.js webgl - interactive - voxel painter</title>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<style>
-			body {
-				font-family: Monospace;
-				background-color: #f0f0f0;
-				margin: 0px;
-				overflow: hidden;
-			}
+<head>
+	<title>three.js webgl - interactive - voxel painter</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+		body {
+			font-family: Monospace;
+			background-color: #f0f0f0;
+			margin: 0px;
+			overflow: hidden;
+		}
 
-			#currentColor {
-				display	: inline-block;
-				width	: 15px;
-				height	: 15px;
-				background-color: #F660AB;
-				border	: solid 2px black;
-			}
+		#currentColor {
+			display	: inline-block;
+			width	: 15px;
+			height	: 15px;
+			background-color: #F660AB;
+			border	: solid 2px black;
+		}
 
-			#oldie { background-color: #ddd !important }
-		</style>
-	</head>
-	<body>
+		#oldie { background-color: #ddd !important }
+	</style>
+</head>
+<body>
 		<!--<script type="text/javascript" src="../build/three.js"></script>
 		<script type="text/javascript" src="js/Detector.js"></script>
 		<script type="text/javascript" src="js/RequestAnimationFrame.js"></script>
@@ -46,16 +46,16 @@
 			theta = 45 * 0.5, isCtrlDown = false;
 
 			var cubeColors	= [
-				new THREE.Color().setRGB(1, 0, 0),
-				new THREE.Color().setRGB(0, 1, 0),
-				new THREE.Color().setRGB(0, 0, 1),	
-				new THREE.Color().setRGB(1, 1, 0),
-				new THREE.Color().setRGB(1, 0, 1),
-				new THREE.Color().setRGB(0, 1, 1),	
-				new THREE.Color().setRGB(1, 0.5, 0.5),	
-				new THREE.Color().setRGB(1, 0.5, 1),	
-				new THREE.Color().setRGB(0.5, 0.5, 1),	
-				new THREE.Color().setRGB(0.5, 0.5, 0.5),	
+			new THREE.Color().setRGB(1, 0, 0),
+			new THREE.Color().setRGB(0, 1, 0),
+			new THREE.Color().setRGB(0, 0, 1),	
+			new THREE.Color().setRGB(1, 1, 0),
+			new THREE.Color().setRGB(1, 0, 1),
+			new THREE.Color().setRGB(0, 1, 1),	
+			new THREE.Color().setRGB(1, 0.5, 0.5),	
+			new THREE.Color().setRGB(1, 0.5, 1),	
+			new THREE.Color().setRGB(0.5, 0.5, 1),	
+			new THREE.Color().setRGB(0.5, 0.5, 0.5),	
 			];
 			var cubeType	= 0;
 
@@ -79,7 +79,7 @@
 				info.style.top = '10px';
 				info.style.width = '100%';
 				info.style.textAlign = 'center';
-				info.innerHTML = '<a href="http://threejs.org" target="_blank">three.js</a> - voxel painter - webgl<br><strong>click</strong>: add voxel, <strong>shift + click</strong>: remove voxel, <strong>control</strong>: rotate, current color: <div id="currentColor"></div>, <strong>0 to 9 keys</strong>: change color';
+				info.innerHTML = '<a href="http://threejs.org" target="_blank">three.js</a> - voxel painter - webgl<br><strong>click</strong>: add voxel, <strong>shift + click</strong>: remove voxel, <strong>control</strong>: rotate, current color: <div id="currentColor"></div>, <strong>0 to 9 keys</strong>: change color, <strong>drop json</strong>: load map file, <a href="javascript:saveJSON();">save .json</a>';
 				container.appendChild( info );
 
 				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
@@ -114,7 +114,7 @@
 
 				// grid
 
-				var size = 1000, step = 50;
+				var size = 500, step = 50;
 
 				var geometry = new THREE.Geometry();
 
@@ -233,15 +233,62 @@
 
 			}
 
-			function onDocumentMouseDown( event ) {
+			function saveJSON() {
+				var children	= scene.children;
+				var voxels	= [];
+				for( var i = 0; i < children.length; i++ ) {
+					console.log(i);
+					var child	= children[i];
+					if( child instanceof THREE.Mesh === false )	{console.log("FAUX !!"); continue};
+					console.log(child);
+					if( child.geometry instanceof THREE.BoxGeometry === false )	continue;
+					console.log("OK : CubeGeometry");
+					if( child === rollOverMesh )	continue;
+					console.log("OK : rollOverMesh // push dans voxels[]");
+					voxels.push({
+						x	: (child.position.x - 25) / 50,
+						y	: (child.position.y - 25) / 50,
+						z	: (child.position.z - 25) / 50,
+						t	: child.material._cubeType
+					});
+				}
+				// open a window with the json
+				var dataUri	= "data:application/json;charset=utf-8,"+JSON.stringify(voxels);
+				window.open( dataUri, 'mywindow' );
+			}
+			
+			function loadJSON(mapJSON) {
+			// delete all cubes
+			var children	= scene.children.slice(0);
+			for( var i = 0; i < children.length; i++ ) {
+				if( children[i] instanceof THREE.Mesh === false ) continue;
+				if( children[i].geometry instanceof THREE.CubeGeometry === false ) continue;
+				if( children[i] === rollOverMesh ) continue;
+				scene.removeChild( children[i] );
+			}	
+			// push new cubes
+			var voxels	= JSON.parse(mapJSON);
+			for( var i = 0; i < voxels.length; i++ ){
+				var voxel = voxels[i];
+				var mesh = new THREE.Mesh( cubeGeo, cubeMaterials[voxel.t] );
+				mesh.position.x = voxel.x * 50 + 25;
+				mesh.position.y = voxel.y * 50 + 25;
+				mesh.position.z = voxel.z * 50 + 25;
+				mesh.matrixAutoUpdate = true;
+				mesh.updateMatrix();
+				scene.addObject( mesh );
+			}
+		}
 
-				event.preventDefault();
+		function onDocumentMouseDown( event ) {
 
-				var intersects = raycaster.intersectObjects( objects );
+			event.preventDefault();
 
-				if ( intersects.length > 0 ) {
+			var intersects = raycaster.intersectObjects( objects );
 
-					intersector = getRealIntersector( intersects );
+			if ( intersects.length > 0 ) {
+
+				intersector = getRealIntersector( intersects );
 
 					// delete cube
 
@@ -257,56 +304,56 @@
 
 					// create cube
 
-					} else {
+				} else {
 
-						intersector = getRealIntersector( intersects );
-						setVoxelPosition( intersector );
+					intersector = getRealIntersector( intersects );
+					setVoxelPosition( intersector );
 
-						var voxel = new THREE.Mesh( cubeGeo, cubeMaterials[cubeType] );
-						voxel.position.copy( voxelPosition );
-						voxel.matrixAutoUpdate = false;
-						voxel.updateMatrix();
-						scene.add( voxel );
+					var voxel = new THREE.Mesh( cubeGeo, cubeMaterials[cubeType] );
+					voxel.position.copy( voxelPosition );
+					voxel.matrixAutoUpdate = false;
+					voxel.updateMatrix();
+					scene.add( voxel );
 
-						objects.push( voxel );
-
-					}
-
-				}
-			}
-
-			function onDocumentKeyDown( event ) {
-
-				switch( event.keyCode ) {
-
-					case 16: isShiftDown = true; break;
-					case 17: isCtrlDown = true; break;
-
-					case '0'.charCodeAt(0): setCubeType(0);	break;
-					case '1'.charCodeAt(0): setCubeType(1);	break;
-					case '2'.charCodeAt(0): setCubeType(2);	break;
-					case '3'.charCodeAt(0): setCubeType(3);	break;
-					case '4'.charCodeAt(0): setCubeType(4);	break;
-					case '5'.charCodeAt(0): setCubeType(5);	break;
-					case '6'.charCodeAt(0): setCubeType(6);	break;
-					case '7'.charCodeAt(0): setCubeType(7);	break;
-					case '8'.charCodeAt(0): setCubeType(8);	break;
-					case '9'.charCodeAt(0): setCubeType(9);	break;
+					objects.push( voxel );
 
 				}
 
 			}
+		}
 
-			function onDocumentKeyUp( event ) {
+		function onDocumentKeyDown( event ) {
 
-				switch ( event.keyCode ) {
+			switch( event.keyCode ) {
 
-					case 16: isShiftDown = false; break;
-					case 17: isCtrlDown = false; break;
+				case 16: isShiftDown = true; break;
+				case 17: isCtrlDown = true; break;
 
-				}
+				case '0'.charCodeAt(0): setCubeType(0);	break;
+				case '1'.charCodeAt(0): setCubeType(1);	break;
+				case '2'.charCodeAt(0): setCubeType(2);	break;
+				case '3'.charCodeAt(0): setCubeType(3);	break;
+				case '4'.charCodeAt(0): setCubeType(4);	break;
+				case '5'.charCodeAt(0): setCubeType(5);	break;
+				case '6'.charCodeAt(0): setCubeType(6);	break;
+				case '7'.charCodeAt(0): setCubeType(7);	break;
+				case '8'.charCodeAt(0): setCubeType(8);	break;
+				case '9'.charCodeAt(0): setCubeType(9);	break;
 
 			}
+
+		}
+
+		function onDocumentKeyUp( event ) {
+
+			switch ( event.keyCode ) {
+
+				case 16: isShiftDown = false; break;
+				case 17: isCtrlDown = false; break;
+
+			}
+
+		}
 
 			//
 
@@ -356,4 +403,4 @@
 		</script>
 
 	</body>
-</html>
+	</html>
